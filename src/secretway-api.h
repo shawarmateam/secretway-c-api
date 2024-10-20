@@ -1,6 +1,7 @@
 #ifndef SECRETWAY_API_H
 #define SECRETWAY_API_H
 
+char* swReadGolang(const char* fp, const char** args);
 int swConnect(const int PORT, const char* SERVER_IP, char* message);
 void swTest();
 

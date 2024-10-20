@@ -1,6 +1,7 @@
 # vars
 BUILD_D = bin
 CODE_D = src
+CODE_GO_D = src-golang
 FILES = ${CODE_D}/main.c ${CODE_D}/secretway-api.c
 
 # cmds

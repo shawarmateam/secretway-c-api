@@ -5,8 +5,50 @@
 #include <arpa/inet.h>
 #include "secretway-api.h"
 
+#define BUFFER_SIZE 128
 //#define PORT 8080
 //#define SERVER_IP "127.0.0.1"
+
+char* swReadGolang(const char* fp, const char** args) {
+    char command[256];
+    snprintf(command, sizeof(command), "%s", fp);
+
+    // Adding args to exec file
+    for (int i = 0; args[i] != NULL; i++) {
+        strncat(command, " ", sizeof(command) - strlen(command) - 1);
+        strncat(command, args[i], sizeof(command) - strlen(command) - 1);
+    }
+
+    // Opening process
+    FILE* file = popen(command, "r");
+    if (file == NULL) {
+        perror("popen failed");
+        return NULL;
+    }
+
+    // Reading output of program
+    char buffer[BUFFER_SIZE];
+    char* output = malloc(BUFFER_SIZE);
+    if (output == NULL) {
+        perror("malloc failed");
+        pclose(file);
+        return NULL;
+    }
+    output[0] = '\0'; // Init string
+
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        strncat(output, buffer, BUFFER_SIZE - strlen(output) - 1);
+    }
+
+    // Close process
+    if (pclose(file) == -1) {
+        perror("pclose failed");
+        free(output);
+        return NULL;
+    }
+
+    return output;
+}
 
 int swConnect(const int PORT, const char* SERVER_IP, char* message) {
     int sock = 0;
