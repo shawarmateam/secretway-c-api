@@ -19,4 +19,9 @@ Run `./clrall.sh`.
 
 2. `int swConnect(const int PORT, const char* SERVER_IP, char* message)` - Connect to **SecretWay**.   *(костыль)*.
 
-3. `swTest()` - Function to test work of **SecretWay API**. If is ok this will write 'hello world'.
+3. `swTest()` - Function to test work of **SecretWay API**. If it's ok this will write `hello world`.
+
+## SecretWay (server part)
+
+You can see **SecretWay** [here](https://github.com/shawarmateam/secretway).
+

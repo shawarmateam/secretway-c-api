@@ -6,8 +6,6 @@
 #include "secretway-api.h"
 
 #define BUFFER_SIZE 128
-//#define PORT 8080
-//#define SERVER_IP "127.0.0.1"
 
 char* swReadGolang(const char* fp, const char** args) {
     char command[256];
@@ -19,21 +17,15 @@ char* swReadGolang(const char* fp, const char** args) {
         strncat(command, args[i], sizeof(command) - strlen(command) - 1);
     }
 
+    printf(command);printf("\n");
+
     // Opening process
     FILE* file = popen(command, "r");
-    if (file == NULL) {
-        perror("popen failed");
-        return NULL;
-    }
 
     // Reading output of program
     char buffer[BUFFER_SIZE];
     char* output = malloc(BUFFER_SIZE);
-    if (output == NULL) {
-        perror("malloc failed");
-        pclose(file);
-        return NULL;
-    }
+
     output[0] = '\0'; // Init string
 
     while (fgets(buffer, sizeof(buffer), file) != NULL) {
@@ -41,11 +33,7 @@ char* swReadGolang(const char* fp, const char** args) {
     }
 
     // Close process
-    if (pclose(file) == -1) {
-        perror("pclose failed");
-        free(output);
-        return NULL;
-    }
+    pclose(file);
 
     return output;
 }
