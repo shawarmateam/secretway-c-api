@@ -9,7 +9,15 @@ import (
 )
 
 type Config struct {
-    DbIps[] string `yaml:"secretway-db-ips"`
+	DbIps          []string `yaml:"secretway-db-ips"`
+	User           User     `yaml:"user"`
+}
+
+type User struct {
+	Id         string `yaml:"id"`
+	Password   string `yaml:"password"`
+	PrivateKey string `yaml:"private_key"`
+	PublicKey  string `yaml:"public_key"`
 }
 
 func cr_config() {
@@ -22,7 +30,7 @@ func ch_rules() {
 		log.Fatalf("E: failed to get info of config.yaml", err)
 	}
 
-	if (fileInfo.Mode() != "-rw-------") {
+	if (fileInfo.Mode().String() != "-rw-------") {
         err = os.Chmod("config.yaml", 0600)
 
         if err != nil {
@@ -32,7 +40,7 @@ func ch_rules() {
 }
 
 func main() {
-    chrules();
+    ch_rules();
 
     // Reading YAML config
     data, err := ioutil.ReadFile("config.yaml")
@@ -53,5 +61,10 @@ func main() {
 	for _, ip := range config.DbIps {
 		fmt.Println(ip)
 	}
+
+    fmt.Println(config.User.Id)
+    fmt.Println(config.User.Password)
+    fmt.Println(config.User.PrivateKey)
+    fmt.Println(config.User.PublicKey)
 }
 
