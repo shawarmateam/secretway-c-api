@@ -8,6 +8,8 @@
 #define BUFFER_SIZE 128
 
 char* swReadGolang(const char* fp, const char** args) {
+    printf("LOG: in swReadGolang()\n");
+
     char command[256];
     snprintf(command, sizeof(command), "%s", fp);
 
@@ -38,7 +40,45 @@ char* swReadGolang(const char* fp, const char** args) {
     return output;
 }
 
-int swConnect(const int PORT, const char* SERVER_IP, char* message) {
+char** swGenArgs(char* message, int user_id, char* password, int s_ui) {
+    printf("LOG: in swGenArgs()\n");
+
+    // Create buffer
+    char** args_arr = malloc(9 * sizeof(char*));
+
+    // Setting up buffer
+    
+    args_arr[0] = "-msg";
+
+    args_arr[1] = malloc(strlen(message) + 3);
+    sprintf(args_arr[1], "\"%s\"", message);   // arg0 == msg
+    printf("LOG: on //arg0 == msg\n");
+
+    args_arr[2] = "-id";
+
+    args_arr[3] = malloc(12);
+    sprintf(args_arr[3], "%d", user_id);       // arg1 == user_id
+    printf("LOG: on // arg1 == user_id\n");
+
+    args_arr[4] = "-pw";
+
+    args_arr[5] = malloc(strlen(password) + 3);
+    sprintf(args_arr[5], "\"%s\"", password);  // arg2 == password
+    printf("LOG: on // arg2 == password\n");
+
+    args_arr[6] = "-sui";
+
+    args_arr[7] = malloc(12);
+    sprintf(args_arr[7], "%d", s_ui);          // arg3 == sendUserId
+    printf("LOG: arg3 == sendUserId\n");
+
+    args_arr[8] = NULL;
+
+    // return
+    return args_arr;
+}
+
+int swConnect(const int PORT, const char* SERVER_IP, char* message, int user_id, char* password, int s_ui) {
     int sock = 0;
     struct sockaddr_in serv_addr;
     char buffer[1024] = {0};
@@ -63,8 +103,17 @@ int swConnect(const int PORT, const char* SERVER_IP, char* message) {
         return -3;
     }
 
+    // Gen package
+    printf("LOG: gen package\n");
+    const char** args = (const char**)swGenArgs(message, user_id, password, s_ui);
+    char* package = swReadGolang("./src-golang/json-parser", args);
+
+    free(args);
+
     // Send package to server
-    send(sock, message, strlen(message), 0);
+    send(sock, package, strlen(package), 0);
+
+    printf("LOG: '");printf(package);printf("'\n\n");
     printf("Message sent\n");
 
     // Get package from server
