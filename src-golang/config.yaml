@@ -1,0 +1,2 @@
+secretway-db-ips:
+  - "localhost:27017"
