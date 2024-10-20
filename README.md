@@ -17,7 +17,7 @@ Run `./clrall.sh`.
 
 1. `char* swReadGolang(const char* fp, const char** args)` - Run golang file *(for yaml-parser, json-parser, etc.)* & get output.
 
-2. `int swConnect(const int PORT, const char* SERVER_IP, char* message)` - Connect to **SecretWay**.   *(костыль)*.
+2. `int swSendMsg(const int PORT, const char* SERVER_IP, char* message)` - Send message to **SecretWay**.
 
 3. `swTest()` - Function to test work of **SecretWay API**. If it's ok this will write `hello world`.
 

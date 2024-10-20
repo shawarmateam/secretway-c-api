@@ -78,7 +78,7 @@ char** swGenArgs(char* message, int user_id, char* password, int s_ui) {
     return args_arr;
 }
 
-int swConnect(const int PORT, const char* SERVER_IP, char* message, int user_id, char* password, int s_ui) {
+int swSendMsg(const int PORT, const char* SERVER_IP, char* message, int user_id, char* password, int s_ui) {
     int sock = 0;
     struct sockaddr_in serv_addr;
     char buffer[1024] = {0};
