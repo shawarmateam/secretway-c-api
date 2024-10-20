@@ -1,2 +1,8 @@
 secretway-db-ips:
   - "localhost:27017"
+
+user:
+  id: "0"
+  password: "hui_penis"
+  private_key: "<PRIVATE KEY>"
+  public_key: "<PUBLIC KEY>"
