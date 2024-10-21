@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "secretway-api.h"
+#include <string.h>
 
 #define BUFFER_SIZE 128
 
@@ -38,6 +39,30 @@ char* swReadGolang(const char* fp, const char** args) {
     pclose(file);
 
     return output;
+}
+
+char** swGetConf(const char** args, const char* parser_p) {
+    char* cfg_str = swReadGolang(parser_p, args);
+
+    char* lines[10];
+    char buffer[123];
+    short line_count = 0;
+
+    strncpy(buffer, cfg_str, sizeof(buffer));
+    buffer[sizeof(buffer) - 1] = '\0';
+
+    char* line = strtok(buffer, "\n");
+    while (line != NULL && line_count < 10) {
+        lines[line_count++] = line;
+
+        if (strlen(line) != 0) line = strtok(NULL, "\n");
+        else line = NULL;
+    }
+
+    for (int i = 0; i < line_count; i++) {
+        if (lines[i] == NULL) printf("NULL");
+        printf("Line %d: %s\n", i + 1, lines[i]);
+    }
 }
 
 char** swGenArgs(char* message, int user_id, char* password, int s_ui) {

@@ -6,6 +6,7 @@ import (
     "log"
     "gopkg.in/yaml.v2"
     "os"
+    "flag"
 )
 
 type Config struct {
@@ -24,14 +25,14 @@ func cr_config() {
 // Coming soon...
 }
 
-func ch_rules() {
-	fileInfo, err := os.Stat("config.yaml")
+func ch_rules(cfg_p string) {
+	fileInfo, err := os.Stat(cfg_p)
 	if err != nil {
 		log.Fatalf("E: failed to get info of config.yaml", err)
 	}
 
 	if (fileInfo.Mode().String() != "-rw-------") {
-        err = os.Chmod("config.yaml", 0600)
+        err = os.Chmod(cfg_p, 0600)
 
         if err != nil {
 		    log.Fatalf("E: failed to change rules of config.yaml to 0600", err)
@@ -40,10 +41,13 @@ func ch_rules() {
 }
 
 func main() {
-    ch_rules();
+    cfg_p := flag.String("c", "config.yaml", "Path to the config")
+    flag.Parse()
+
+    ch_rules(*cfg_p);
 
     // Reading YAML config
-    data, err := ioutil.ReadFile("config.yaml")
+    data, err := ioutil.ReadFile(*cfg_p)
     if err != nil {
         log.Fatalf("E: %v", err)
     }
@@ -61,6 +65,7 @@ func main() {
 	for _, ip := range config.DbIps {
 		fmt.Println(ip)
 	}
+    fmt.Println();
 
     fmt.Println(config.User.Id)
     fmt.Println(config.User.Password)
