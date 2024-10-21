@@ -65,7 +65,7 @@ func main() {
 	for _, ip := range config.DbIps {
 		fmt.Println(ip)
 	}
-    fmt.Println();
+    fmt.Println(".");
 
     fmt.Println(config.User.Id)
     fmt.Println(config.User.Password)

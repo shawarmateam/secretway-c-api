@@ -54,13 +54,10 @@ char** swGetConf(const char** args, const char* parser_p) {
     char* line = strtok(buffer, "\n");
     while (line != NULL && line_count < 10) {
         lines[line_count++] = line;
-
-        if (strlen(line) != 0) line = strtok(NULL, "\n");
-        else line = NULL;
+        line = strtok(NULL, "\n");
     }
 
     for (int i = 0; i < line_count; i++) {
-        if (lines[i] == NULL) printf("NULL");
         printf("Line %d: %s\n", i + 1, lines[i]);
     }
 }
