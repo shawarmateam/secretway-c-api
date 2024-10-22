@@ -8,6 +8,15 @@
 
 #define BUFFER_SIZE 128
 
+/*struct UserConf {
+    char* id;
+    char* password;
+    char* private_key;
+    char* public_key;
+    
+    char** db_ips;
+};*/
+
 char* swReadGolang(const char* fp, const char** args) {
     printf("LOG: in swReadGolang()\n");
 
@@ -41,7 +50,7 @@ char* swReadGolang(const char* fp, const char** args) {
     return output;
 }
 
-char** swGetConf(const char** args, const char* parser_p) {
+struct UserConf swGetConf(const char** args, const char* parser_p) {
     char* cfg_str = swReadGolang(parser_p, args);
 
     char* lines[10];
@@ -52,7 +61,7 @@ char** swGetConf(const char** args, const char* parser_p) {
     buffer[sizeof(buffer) - 1] = '\0';
 
     char* line = strtok(buffer, "\n");
-    while (line != NULL && line_count < 10) {
+    while (line != NULL && line_count < 10) { // read config
         lines[line_count++] = line;
         line = strtok(NULL, "\n");
     }
@@ -60,6 +69,36 @@ char** swGetConf(const char** args, const char* parser_p) {
     for (int i = 0; i < line_count; i++) {
         printf("Line %d: %s\n", i + 1, lines[i]);
     }
+
+    line_count = 0; // db_ips read sector
+    char* db_ips[10];
+    struct UserConf u_cfg;
+
+    while (lines[line_count] != ".") {
+        db_ips[line_count] = lines[line_count];
+        line_count++;
+    }
+
+    line_count++; // read id sector
+    char* id = lines[line_count];
+
+    line_count++; // read password sector
+    char* password = lines[line_count];
+
+    line_count++; // read pr. key
+    char* private_key = lines[line_count];
+
+    line_count++; // read pu. key
+    char* public_key = lines[line_count];
+
+    // write all to struct
+    u_cfg.db_ips = db_ips;
+    u_cfg.id = id;
+    u_cfg.password = password;
+    u_cfg.private_key = private_key;
+    u_cfg.public_key = public_key;
+
+    return u_cfg;
 }
 
 char** swGenArgs(char* message, int user_id, char* password, int s_ui) {
