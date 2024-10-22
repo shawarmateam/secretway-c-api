@@ -67,36 +67,48 @@ struct UserConf swGetConf(const char** args, const char* parser_p) {
     }
 
     for (int i = 0; i < line_count; i++) {
-        printf("Line %d: %s\n", i + 1, lines[i]);
+        printf("Line %d: %s\n", i, lines[i]);
     }
 
     line_count = 0; // db_ips read sector
     char* db_ips[10];
     struct UserConf u_cfg;
 
-    while (lines[line_count] != ".") {
-        db_ips[line_count] = lines[line_count];
+    printf("LOG: start of db_ips sector\n");
+    while (strcmp(lines[line_count], ".") != 0) {
+        printf("LOG: line == '%s'\n", lines[line_count]);
+
+        printf("LOG: '%s', '%s'\n", lines[line_count], db_ips[line_count]);
+
+        db_ips[line_count] = (char*)malloc(21 * sizeof(char)); // 21 is max for IPv4. example: 255.255.255:65535
+        strcpy(db_ips[line_count], lines[line_count]);
         line_count++;
     }
+    db_ips[line_count] = NULL;
+    printf("LOG: end of db_ips sector\n");
 
     line_count++; // read id sector
-    char* id = lines[line_count];
+    char* id = strdup(lines[line_count]);
+    printf("LOG: %d line == '%s'\n", line_count, id);
 
     line_count++; // read password sector
-    char* password = lines[line_count];
+    char* password = strdup(lines[line_count]); // TODO: пофиксить ошибку неправильного заполнения
 
     line_count++; // read pr. key
-    char* private_key = lines[line_count];
+    char* private_key = strdup(lines[line_count]);
 
     line_count++; // read pu. key
-    char* public_key = lines[line_count];
+    char* public_key = strdup(lines[line_count]);
 
     // write all to struct
+    printf("LOG: writing all to struct...\n");
+    printf("LOG: db_ips: '%s'\n", db_ips[0]);
     u_cfg.db_ips = db_ips;
     u_cfg.id = id;
     u_cfg.password = password;
     u_cfg.private_key = private_key;
     u_cfg.public_key = public_key;
+    printf("LOG: next is return.\n");
 
     return u_cfg;
 }

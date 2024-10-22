@@ -13,10 +13,15 @@ int main() {
     const char** args_yk = (const char**)&args;
 
     struct UserConf u_cfg = swGetConf(args_yk, "./src-golang/yaml-parser");
-    printf("%s\n", u_cfg.id);
-    printf("%s\n", u_cfg.password);
-    printf("%s\n", u_cfg.private_key);
-    printf("%s\n", u_cfg.public_key);
+
+    for (int i=0; u_cfg.db_ips[i] != NULL; ++i) {
+        printf("db_ips: '%s'\n", u_cfg.db_ips[i]);
+    }
+
+    printf("id: '%s'\n", u_cfg.id);
+    printf("pswd: '%s'\n", u_cfg.password);
+    printf("pr_key: '%s'\n", u_cfg.private_key);
+    printf("pu_key: '%s'\n", u_cfg.public_key);
 
     return 0;
 }
