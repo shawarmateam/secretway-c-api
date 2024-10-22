@@ -50,7 +50,7 @@ char* swReadGolang(const char* fp, const char** args) {
     return output;
 }
 
-struct UserConf swGetConf(const char** args, const char* parser_p) {
+struct UserConf* swGetConf(const char** args, const char* parser_p) {
     char* cfg_str = swReadGolang(parser_p, args);
 
     char* lines[10];
@@ -71,21 +71,24 @@ struct UserConf swGetConf(const char** args, const char* parser_p) {
     }
 
     line_count = 0; // db_ips read sector
-    char* db_ips[10];
-    struct UserConf u_cfg;
+    char** db_ips = (char**)malloc(10 * sizeof( char* ));
+    struct UserConf* u_cfg = (struct UserConf*)malloc(sizeof(struct UserConf));
 
     printf("LOG: start of db_ips sector\n");
     while (strcmp(lines[line_count], ".") != 0) {
         printf("LOG: line == '%s'\n", lines[line_count]);
 
-        printf("LOG: '%s', '%s'\n", lines[line_count], db_ips[line_count]);
-
         db_ips[line_count] = (char*)malloc(21 * sizeof(char)); // 21 is max for IPv4. example: 255.255.255:65535
+
+        printf("LOG: '%s', '%s'\n", lines[line_count], db_ips[line_count]);
         strcpy(db_ips[line_count], lines[line_count]);
         line_count++;
     }
+
+    printf("LOG: line_count == %d", line_count);
     db_ips[line_count] = NULL;
-    printf("LOG: end of db_ips sector\n");
+
+    printf("LOG: end of db_ips sector (%s)\n", db_ips[line_count]);
 
     line_count++; // read id sector
     char* id = strdup(lines[line_count]);
@@ -102,12 +105,12 @@ struct UserConf swGetConf(const char** args, const char* parser_p) {
 
     // write all to struct
     printf("LOG: writing all to struct...\n");
-    printf("LOG: db_ips: '%s'\n", db_ips[0]);
-    u_cfg.db_ips = db_ips;
-    u_cfg.id = id;
-    u_cfg.password = password;
-    u_cfg.private_key = private_key;
-    u_cfg.public_key = public_key;
+    u_cfg->db_ips = db_ips;
+    printf("LOG: db_ips: '%s', '%s'\n", db_ips[line_count], u_cfg->db_ips[line_count]);
+    u_cfg->id = id;
+    u_cfg->password = password;
+    u_cfg->private_key = private_key;
+    u_cfg->public_key = public_key;
     printf("LOG: next is return.\n");
 
     return u_cfg;
