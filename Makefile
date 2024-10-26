@@ -2,6 +2,7 @@
 BUILD_D = bin
 CODE_D = src
 FILES = ${CODE_D}/main.cpp ${CODE_D}/secretway-api.cpp
+#${CODE_D}/env_parser.cpp
 
 # cmds
 all: build
