@@ -86,17 +86,12 @@ UserConf* swParseConfig() {
         UserConf* u_cfg;
         u_cfg->id = (char*)id.c_str();
         u_cfg->password = (char*)pswd.c_str();
-        printf("id: '%s', psswrd: '%s'\n", u_cfg->id, u_cfg->password);
 
         return u_cfg;
     }
 
     return NULL;
 }
-
-
-
-
 
 char* swExec(const char* cmd) {
     array<char, 128> buffer;
@@ -134,7 +129,17 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg) {
     }
     std::cout << "Подключено к серверу!" << std::endl;
 
-    char* package = swExec("./json-parser -msg \"hello from go\" -id 0 -pw hui_penis -sui 0");
+//    sprintf(package,
+//"{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}", u_cfg->id, u_cfg->password, s_ui, msg);
+    size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + strlen(msg);
+    char* package = (char*)malloc(package_size);
+
+    memset(package, 0, package_size);
+
+    snprintf(package, package_size,
+        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}",
+        u_cfg->id, u_cfg->password, s_ui, msg);
+
     cout << "'" << package << "'" << endl;
 
     send(sock, package, strlen(package), 0);
