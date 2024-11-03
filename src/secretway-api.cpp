@@ -11,7 +11,7 @@
 #include <string>
 #include <array>
 #include "secretway-api.h"
-
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <map>
@@ -71,7 +71,7 @@ private:
     }
 };
 
-UserConf* swParseConfig() {
+UserConf swParseConfig() {
     EnvParser parser;
     if (parser.load("config.env")) {
         std::string id = parser.get("USERID");
@@ -80,37 +80,52 @@ UserConf* swParseConfig() {
             std::cout << "USERID: '" << id << "'" << std::endl;
             std::cout << "PASSWORD: '" << pswd << "'" << std::endl;
         } else {
-            std::cout << "USERID not found. Closing..." << std::endl;
+            std::cout << "Incorrect config. Closing..." << std::endl;
+            exit(1);
         }
 
-        UserConf* u_cfg;
-        u_cfg->id = (char*)id.c_str();
-        u_cfg->password = (char*)pswd.c_str();
+        UserConf u_cfg;
+        u_cfg.id = strdup((char*)id.c_str());
+        u_cfg.password = strdup((char*)pswd.c_str());
 
         return u_cfg;
     }
 
-    return NULL;
+    cout << "Parse failture" << endl;
+    exit(1);
 }
 
-char* swExec(const char* cmd) {
-    array<char, 128> buffer;
-    string result;
-    unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw runtime_error("popen() failed!");
-    }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
+std::vector<DbIp> swParseIpList(const std::string &filename) {
+    std::vector<DbIp> dbIps; // Используем вектор для динамического размера
+    std::ifstream file(filename);
+    std::string line;
+
+    if (!file.is_open()) {
+        std::cerr << "Не удалось открыть файл!" << std::endl;
+        return dbIps; // Возвращаем пустой вектор в случае ошибки
     }
 
-    char* output = new char[result.size() + 1]; // +1 для нуль-терминатора
-    strcpy(output, result.c_str());
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string ip;
+        std::string portStr;
 
-    return output;
+        // Разделяем строку на IP и порт
+        if (std::getline(iss, ip, ':') && std::getline(iss, portStr)) {
+            DbIp dbIp;
+            dbIp.ip = new char[ip.length() + 1]; // Выделяем память для IP
+            std::strcpy(dbIp.ip, ip.c_str()); // Копируем IP в структуру
+            dbIp.port = static_cast<short>(std::stoi(portStr)); // Преобразуем порт в short
+
+            dbIps.push_back(dbIp); // Добавляем структуру в вектор
+        }
+    }
+
+    file.close();
+    return dbIps; // Возвращаем заполненный вектор
 }
 
-int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg) {
+int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         std::cerr << "Ошибка при создании сокета" << std::endl;
@@ -119,8 +134,8 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg) {
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(1201); // Порт сервера
-    inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr); // IP-адрес сервера
+    serverAddress.sin_port = htons(db_ip->port);            // Default IP is 127.0.0.1:1201 ps. 21 is max
+    inet_pton(AF_INET, db_ip->ip, &serverAddress.sin_addr);
 
     if (connect(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
         std::cerr << "Ошибка при подключении к серверу" << std::endl;
@@ -129,8 +144,6 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg) {
     }
     std::cout << "Подключено к серверу!" << std::endl;
 
-//    sprintf(package,
-//"{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}", u_cfg->id, u_cfg->password, s_ui, msg);
     size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + strlen(msg);
     char* package = (char*)malloc(package_size);
 

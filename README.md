@@ -8,15 +8,15 @@ Offical **API** client in `C++` for [SecretWay](https://github.com/shawarmateam/
 ```cpp
 struct UserConf
 {
-    char** db_ips; // IPs of databases
-
-    char* id; // User ID
-    char* password; // User password
-    const char* private_key;
-    const char* public_key;
-    const bool client = true;
+    char* id;                 // User ID
+    char* password;           // User password
+    const char* private_key;  // Private Key to decrypt msgs using RSA
+    const char* public_key;   // Public Key to send msgs to you
+    const bool client = true; // To display that you are a client
 };
 ```
+
+To send message you need to use **swSendMsg()**.
 
 ### Functions
 
