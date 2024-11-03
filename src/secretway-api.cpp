@@ -125,6 +125,12 @@ std::vector<DbIp> swParseIpList(const std::string &filename) {
     return dbIps; // Возвращаем заполненный вектор
 }
 
+void freeDbIpVector(std::vector<DbIp>& db_ips) {
+    for (auto& db_ip : db_ips) {
+        free(db_ip.ip);
+    }
+}
+
 int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -157,7 +163,10 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     send(sock, package, strlen(package), 0);
 
+    // Remove mem
+    free(package);
     close(sock);
+
     return 0;
 }
 

@@ -19,5 +19,6 @@ struct UserConf
 UserConf swParseConfig();
 int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp* db_ip);
 std::vector<DbIp> swParseIpList(const std::string &filename);
+void freeDbIpVector(std::vector<DbIp>& db_ips);
 
 #endif // SECRETWAY_API_H

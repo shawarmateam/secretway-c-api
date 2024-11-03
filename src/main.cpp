@@ -17,5 +17,10 @@ int main()
     printf("id: '%s'\n", u_cfg.id);
     printf("pswd: '%s'\n", u_cfg.password);
 
+    // Remove mem
+    free(u_cfg.id);
+    free(u_cfg.password);
+    freeDbIpVector(db_ips);
+
     return 0;
 }
