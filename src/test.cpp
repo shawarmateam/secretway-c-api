@@ -55,6 +55,12 @@ std::string rsaDecrypt(RSA* rsa, const std::string& encryptedMessage) {
     return decryptedMessage;
 }
 
+std::string swCypherMsg(std::string package, RSA* pub_key, std::string salt) {
+    std::string cypheredMsg = "SW"+rsaEncrypt(pub_key, package)+":"+salt;
+    return cypheredMsg;
+}
+
+
 int main() {
     // Загрузка ключей
     RSA* publicKey = createRSAWithFilename("public_key.pem", 1);
@@ -64,12 +70,13 @@ int main() {
     std::cout << "Original Message: " << message << std::endl;
 
     // Шифрование
-    std::string encryptedMessage = rsaEncrypt(publicKey, message);
+    //std::string encryptedMessage = rsaEncrypt(publicKey, message);
+    std::string encryptedMessage = swCypherMsg(message, publicKey, "GSFHDYXg4r32gDSAG");
     std::cout << "Encrypted Message: " << encryptedMessage << std::endl;
 
     // Расшифрование
-    std::string decryptedMessage = rsaDecrypt(privateKey, encryptedMessage);
-    std::cout << "Decrypted Message: " << decryptedMessage << std::endl;
+    //std::string decryptedMessage = rsaDecrypt(privateKey, encryptedMessage);
+    //std::cout << "Decrypted Message: " << decryptedMessage << std::endl;
 
     // Освобождение ресурсов
     RSA_free(publicKey);
