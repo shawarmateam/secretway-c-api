@@ -22,3 +22,25 @@ To send message you need to use **swSendMsg()**.
 
 - `swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg)` - Send message to user.
 
+### Cypher System
+
+For example we take message **"Hello World"**:
+
+`SW349ZCDXSNsdA3AdsasadZXCQ233SAfDC:3267AVSDrews23465dstA5d5sarA`.
+
+- SW means signature that message didn't corrupted.
+- After **SW** is cyphered message.
+- **":"** is salt for aprove that message isn't corrupted too.
+
+Here is **decrypted message:**
+
+```json
+{
+    "userId": "0",
+    "password": "1234",
+    "sendUserId": "0",
+    "msg": "Hello world",
+
+    "salt": "3267AVSDrews23465dstA5d5sarA"
+}
+```
