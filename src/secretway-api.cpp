@@ -1,11 +1,13 @@
 #include <iostream>
 #include <cstring>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -15,8 +17,16 @@
 #include <fstream>
 #include <sstream>
 #include <map>
-
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
+#include <ctime>
 using namespace std;
+
+void handleErrors() {
+    ERR_print_errors_fp(stderr);
+    abort();
+}
 
 class EnvParser {
 public:
@@ -95,6 +105,32 @@ UserConf swParseConfig() {
     exit(1);
 }
 
+int swGenKeys(char *pu_key, char *pr_key) {
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
+    int keyLength = 2048;
+    RSA *rsa = RSA_generate_key(keyLength, RSA_F4, nullptr, nullptr);
+    if (!rsa) handleErrors();
+
+    FILE *privateKeyFile = fopen(pr_key, "wb");
+
+    if (!privateKeyFile) handleErrors();
+    if (PEM_write_RSAPrivateKey(privateKeyFile, rsa, nullptr, nullptr, 0, nullptr, nullptr) != 1) handleErrors();
+    fclose(privateKeyFile);
+
+    FILE *publicKeyFile = fopen(pu_key, "wb");
+
+    if (!publicKeyFile) handleErrors();
+    if (PEM_write_RSA_PUBKEY(publicKeyFile, rsa) != 1) handleErrors();
+
+    fclose(publicKeyFile);
+
+    RSA_free(rsa);
+    ERR_free_strings();
+    EVP_cleanup();
+}
+
 std::vector<DbIp> swParseIpList(const std::string &filename) {
     std::vector<DbIp> dbIps; // Используем вектор для динамического размера
     std::ifstream file(filename);
@@ -131,7 +167,78 @@ void freeDbIpVector(std::vector<DbIp>& db_ips) {
     }
 }
 
+RSA* createRSAWithFilename(const char* filename, int public_key) {
+    FILE* fp = fopen(filename, "rb");
+    if (fp == nullptr) {
+        std::cerr << "Unable to open file " << filename << std::endl;
+        return nullptr;
+    }
+
+    RSA* rsa = nullptr;
+    if (public_key) {
+        rsa = PEM_read_RSA_PUBKEY(fp, &rsa, nullptr, nullptr);
+    } else {
+        rsa = PEM_read_RSAPrivateKey(fp, &rsa, nullptr, nullptr);
+    }
+
+    fclose(fp);
+    return rsa;
+}
+
+std::string rsaEncrypt(RSA* rsa, const std::string& message) {
+    int rsa_len = RSA_size(rsa);
+    unsigned char* encrypted = new unsigned char[rsa_len];
+
+    int result = RSA_public_encrypt(message.length(), (unsigned char*)message.c_str(), encrypted, rsa, RSA_PKCS1_OAEP_PADDING);
+    if (result == -1) {
+        handleErrors();
+    }
+
+    std::string encryptedMessage(reinterpret_cast<char*>(encrypted), result);
+    delete[] encrypted;
+    return encryptedMessage;
+}
+
+std::string rsaDecrypt(RSA* rsa, const std::string& encryptedMessage) {
+    int rsa_len = RSA_size(rsa);
+    unsigned char* decrypted = new unsigned char[rsa_len];
+
+    int result = RSA_private_decrypt(encryptedMessage.length(), (unsigned char*)encryptedMessage.c_str(), decrypted, rsa, RSA_PKCS1_OAEP_PADDING);
+    if (result == -1) {
+        handleErrors();
+    }
+
+    std::string decryptedMessage(reinterpret_cast<char*>(decrypted), result);
+    delete[] decrypted;
+    return decryptedMessage;
+}
+
+std::string swGenSalt() {
+    const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                    "abcdefghijklmnopqrstuvwxyz"
+                                    "0123456789"
+                                    "!@$%^*_+.";
+    std::string salt;
+    srand(static_cast<unsigned int>(time(0))); // init
+
+    for (int i = 0; i < 120; ++i) {
+        salt += characters[rand() % characters.size()];
+    }
+
+    return salt;
+}
+
+std::string swCypherMsg(std::string package, void* pub_key, std::string salt) {
+    std::string cypheredMsg = "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
+    return cypheredMsg;
+}
+
 int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
+    if (u_cfg->public_key == NULL || u_cfg->private_key == NULL) { // Check on public & private keys
+        std::cerr << "No swLoadKeys()" << std::endl;
+        return 1;
+    }
+
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         std::cerr << "Ошибка при создании сокета" << std::endl;
@@ -160,8 +267,13 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
         u_cfg->id, u_cfg->password, s_ui, msg);
 
     cout << "'" << package << "'" << endl;
+                                                    // TEST (TO SEND 4 URSELF)
+    std::string package_cyph = swCypherMsg(package, u_cfg->public_key, swGenSalt());
+    const char *package_char = package_cyph.c_str();
 
-    send(sock, package, strlen(package), 0);
+    std::cout << package_cyph.length() << std::endl;
+    std::cout << strlen(package_char) << std::endl;
+    send(sock, package_char, strlen(package_char), 0);
 
     // Remove mem
     free(package);
@@ -170,3 +282,7 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     return 0;
 }
 
+void swLoadKeys(UserConf *u_cfg, std::string pu_key, std::string pr_key) {
+    u_cfg->public_key = createRSAWithFilename(pu_key.c_str(), 1);
+    u_cfg->private_key = createRSAWithFilename(pr_key.c_str(), 0);
+}

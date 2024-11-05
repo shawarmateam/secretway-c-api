@@ -13,7 +13,9 @@ int main()
     cout << first_ip.ip << endl;
     cout << first_ip.port << endl;
     
-    swSendMsg("test", "0", &u_cfg, &first_ip);
+    swLoadKeys(&u_cfg, "public_key.pem", "private_key.pem");
+    int status_msg = swSendMsg("test", "0", &u_cfg, &first_ip);
+
     printf("id: '%s'\n", u_cfg.id);
     printf("pswd: '%s'\n", u_cfg.password);
 

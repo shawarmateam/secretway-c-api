@@ -3,6 +3,8 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <string.h>
+#include <cstdlib>
+#include <ctime>
 
 void handleErrors() {
     ERR_print_errors_fp(stderr);
@@ -55,11 +57,25 @@ std::string rsaDecrypt(RSA* rsa, const std::string& encryptedMessage) {
     return decryptedMessage;
 }
 
+std::string swGenSalt(int length) {
+    const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                    "abcdefghijklmnopqrstuvwxyz"
+                                    "0123456789"
+                                    "!@$%^*_+.";
+    std::string salt;
+    srand(static_cast<unsigned int>(time(0))); // init
+
+    for (int i = 0; i < length; ++i) {
+        salt += characters[rand() % characters.size()];
+    }
+
+    return salt;
+}
+
 std::string swCypherMsg(std::string package, RSA* pub_key, std::string salt) {
     std::string cypheredMsg = "SW"+rsaEncrypt(pub_key, package)+":"+salt;
     return cypheredMsg;
 }
-
 
 int main() {
     // Загрузка ключей
@@ -67,12 +83,12 @@ int main() {
     RSA* privateKey = createRSAWithFilename("private_key.pem", 0);
 
     std::string message = "Hello, World!";
-    std::cout << "Original Message: " << message << std::endl;
+    //std::cout << "Original Message: " << message << std::endl;
 
     // Шифрование
     //std::string encryptedMessage = rsaEncrypt(publicKey, message);
-    std::string encryptedMessage = swCypherMsg(message, publicKey, "GSFHDYXg4r32gDSAG");
-    std::cout << "Encrypted Message: " << encryptedMessage << std::endl;
+    std::string encryptedMessage = swCypherMsg(message, publicKey, swGenSalt(120));
+    std::cout << encryptedMessage << std::endl;
 
     // Расшифрование
     //std::string decryptedMessage = rsaDecrypt(privateKey, encryptedMessage);

@@ -8,7 +8,7 @@ all: build
 
 build: ./${CODE_D}/main.cpp
 	mkdir -p bin/
-	g++ -o ${BUILD_D}/main ${FILES}
+	g++ -o ${BUILD_D}/main ${FILES} -lssl -lcrypto
 
 lib: ./${CODE_D}/secretway-api.cpp
 	mkdir -p bin/
