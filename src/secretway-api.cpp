@@ -21,6 +21,16 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <ctime>
+
+#include <mongocxx/client.hpp>
+#include <mongocxx/instance.hpp>
+#include <mongocxx/uri.hpp>
+
+#include <mongocxx/stdx.hpp>
+#include <bsoncxx/json.hpp>
+#include <bsoncxx/builder/stream/document.hpp>
+#include <iostream>
+
 using namespace std;
 
 void handleErrors() {
@@ -103,6 +113,45 @@ UserConf swParseConfig() {
 
     cout << "Parse failture" << endl;
     exit(1);
+}
+
+
+
+RSA* loadServerKey(const std::string& publicKeyStr) {
+    BIO* bio = BIO_new_mem_buf(publicKeyStr.c_str(), -1);
+    if (!bio) {
+        std::cerr << "Failed to create BIO" << std::endl;
+        return nullptr;
+    }
+
+    RSA* rsa = PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+
+    if (!rsa) {
+        std::cerr << "Failed to read public key" << std::endl;
+        return nullptr;
+    }
+
+    return rsa;
+}
+
+std::string getServerKey(char *ip) {
+    mongocxx::instance instance{};
+    mongocxx::client client{mongocxx::uri{"mongodb://localhost:27017"}};
+
+    auto db = client["servers_bd"];
+    auto collection = db["offacc_servers"];
+
+    bsoncxx::builder::stream::document filter_builder;
+    filter_builder << "server_ip" << ip;
+
+    auto cursor = collection.find(filter_builder.view());
+
+    for (auto&& doc : cursor) {
+        auto public_key = doc["public_key"].get_utf8().value;
+        std::string str(public_key);
+        return str;
+    }
 }
 
 int swGenKeys(char *pu_key, char *pr_key) {
@@ -225,7 +274,9 @@ std::string swGenSalt() {
         salt += characters[rand() % characters.size()];
     }
 
-    return salt;
+    char *res = new char[salt.size() + 1];
+    std::strcpy(res, salt.c_str());
+    return res;
 }
 
 std::string swCypherMsg(std::string package, void* pub_key, std::string salt) {
@@ -257,17 +308,25 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     }
     std::cout << "Подключено к серверу!" << std::endl;
 
-    size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + strlen(msg);
-    char* package = (char*)malloc(package_size);
+    //                     TODO: change to data from DbIp  --\|
+    RSA *server_key = loadServerKey(getServerKey("localhost:27017"));                            // get server key
+    std::string msg_salt = swGenSalt();                                                          // gen salt
+    char *msg_salt_c = new char[msg_salt.size()+1];
+    std::strcpy(msg_salt_c, msg_salt.c_str());                                                   // get salt as char *
 
+    std::string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
+    cout << "Msg cyphered!" << endl;
+
+    size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + cyphered_msg.size();
+    char* package = (char*)malloc(package_size);
     memset(package, 0, package_size);
 
     snprintf(package, package_size,
-        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}",
+        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}", // TODO: добавить 'salt': "<соль>"
         u_cfg->id, u_cfg->password, s_ui, msg);
 
     cout << "'" << package << "'" << endl;
-                                                    // TEST (TO SEND 4 URSELF)
+    //                                              TEST (TO SEND 4 URSELF)
     std::string package_cyph = swCypherMsg(package, u_cfg->public_key, swGenSalt());
     const char *package_char = package_cyph.c_str();
 
