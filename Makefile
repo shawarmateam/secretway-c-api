@@ -2,7 +2,7 @@
 BUILD_D = bin
 CODE_D = src
 FILES = ${CODE_D}/main.cpp ${CODE_D}/secretway-api.cpp
-ARGS = -lssl -lcrypto -lmongocxx -lbsoncxx -I/usr/include/mongocxx/v_noabi -I/usr/include/bsoncxx/v_noabi
+ARGS = -lssl -lcrypto -lmongocxx -lbsoncxx -I/usr/include/mongocxx/v_noabi -I/usr/include/bsoncxx/v_noabi -Wdeprecated-declarations
 
 # cmds
 all: build

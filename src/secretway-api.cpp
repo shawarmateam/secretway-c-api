@@ -118,7 +118,9 @@ UserConf swParseConfig() {
 
 
 RSA* loadServerKey(const std::string& publicKeyStr) {
+    cout << "start of loadServerKey" << endl;
     BIO* bio = BIO_new_mem_buf(publicKeyStr.c_str(), -1);
+    cout << "BIO cteated!" << endl;
     if (!bio) {
         std::cerr << "Failed to create BIO" << std::endl;
         return nullptr;
@@ -152,6 +154,8 @@ std::string getServerKey(char *ip) {
         std::string str(public_key);
         return str;
     }
+    cout << "[FATAL] no public_key found" << endl;
+    exit(1);
 }
 
 int swGenKeys(char *pu_key, char *pr_key) {
@@ -292,8 +296,8 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        std::cerr << "Ошибка при создании сокета" << std::endl;
-        return 1;
+        std::cerr << "[FATAL] Error during creating socket" << std::endl;
+        exit(1);
     }
 
     sockaddr_in serverAddress;
@@ -302,14 +306,18 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     inet_pton(AF_INET, db_ip->ip, &serverAddress.sin_addr);
 
     if (connect(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        std::cerr << "Ошибка при подключении к серверу" << std::endl;
+        std::cerr << "[FATAL] Error during connect to server" << std::endl;
         close(sock);
-        return 1;
+        exit(1);
     }
-    std::cout << "Подключено к серверу!" << std::endl;
+    std::cout << "Connected to server!" << std::endl;
 
     //                     TODO: change to data from DbIp  --\|
-    RSA *server_key = loadServerKey(getServerKey("localhost:27017"));                            // get server key
+    const std::string server_key_str = getServerKey("localhost:1201");
+
+    cout << "Server key getted!" << endl;
+    RSA *server_key = loadServerKey(server_key_str);                    // get server key
+    cout << "server key loaded" << endl;
     std::string msg_salt = swGenSalt();                                                          // gen salt
     char *msg_salt_c = new char[msg_salt.size()+1];
     std::strcpy(msg_salt_c, msg_salt.c_str());                                                   // get salt as char *

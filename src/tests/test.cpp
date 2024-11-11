@@ -5,6 +5,7 @@
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <iostream>
+using namespace std;
 
 std::string getServerKey(char *ip) {
     mongocxx::instance instance{};
@@ -23,6 +24,8 @@ std::string getServerKey(char *ip) {
         std::string str(public_key);
         return str;
     }
+    cout << "[FATAL] no public_key found" << endl;
+    exit(1);
 }
 
 int main() {
