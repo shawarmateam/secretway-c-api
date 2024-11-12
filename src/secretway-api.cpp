@@ -283,7 +283,23 @@ std::string swGenSalt() {
     return res;
 }
 
+std::string swDecryptMsg(void *pri_key, std::string e_msg) {
+    if (e_msg[0] != 'S' || e_msg[1] != 'W') {
+        cout << "[ERROR] Invalid message (swDecryptMsg)" << endl;
+        exit(1);
+    }
+
+    e_msg.erase(0, 2); // Remove SW mark
+    MsgCyph msg_struct;
+    msg_struct.cyph_msg = e_msg.substr(0, 2049); // index of RSA msg end
+    msg_struct.salt = e_msg.substr(2050);        // to skip ":"
+    std::string msg = rsaDecrypt((RSA*)pri_key, msg_struct.cyph_msg);
+    cout << "MSG: " << msg << endl;
+    return msg;
+}
+
 std::string swCypherMsg(std::string package, void* pub_key, std::string salt) {
+
     std::string cypheredMsg = "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
     return cypheredMsg;
 }
@@ -324,6 +340,7 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     std::string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
     cout << "Msg cyphered!" << endl;
+    cout << cyphered_msg << endl;
 
     size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + cyphered_msg.size();
     char* package = (char*)malloc(package_size);

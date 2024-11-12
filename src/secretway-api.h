@@ -14,14 +14,14 @@ struct UserConf
     char* id;
     char* password;
     void* private_key; // RSA*
-    void* public_key; // RSA*
+    void* public_key;  // RSA*
     const bool client = true;
 };
 
 struct MsgCyph
 {
-    char* cyph_msg;
-    char* salt;
+    std::string cyph_msg;
+    std::string salt;
 };
 
 UserConf swParseConfig();
@@ -32,5 +32,6 @@ std::string swGenSalt();
 std::string swCypherMsg(std::string package, void* pub_key, std::string salt);
 void swLoadKeys(UserConf *u_cfg, std::string pu_key, std::string pr_key);
 int swGenKeys(char *pu_key, char *pr_key);
+std::string swDecryptMsg(void *pri_key, std::string e_msg);
 
 #endif // SECRETWAY_API_H
