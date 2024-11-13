@@ -316,10 +316,10 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     //                     TODO: change to data from DbIp  --\|
     const string server_key_str = getServerKey("localhost:1201");
 
-    RSA *server_key = loadServerKey(server_key_str);                    // get server key
-    string msg_salt = swGenSalt();                                                          // gen salt
-    char *msg_salt_c = new char[msg_salt.size()+1];
-    strcpy(msg_salt_c, msg_salt.c_str());                                                   // get salt as char *
+    RSA *server_key = loadServerKey(server_key_str);   // get server key
+    string msg_salt = swGenSalt();                     // gen salt
+    char *msg_salt_c = new char[msg_salt.size()+1];    // alloc char *
+    strcpy(msg_salt_c, msg_salt.c_str());              // get salt as char *
 
     string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
     cout << cyphered_msg << endl;
@@ -358,4 +358,8 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 void swLoadKeys(UserConf *u_cfg, string pu_key, string pr_key) {
     u_cfg->public_key = createRSAWithFilename(pu_key.c_str(), 1);
     u_cfg->private_key = createRSAWithFilename(pr_key.c_str(), 0);
+}
+
+void swLoadServerKey(DbIp *db_ip, string pr_key) {
+    db_ip->private_key = createRSAWithFilename(pr_key.c_str(), 1);
 }
