@@ -1,3 +1,4 @@
+// main libs
 #include <iostream>
 #include <cstring>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+// important libs
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -17,19 +19,25 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+
+// For RSA
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <ctime>
 
+// mongo CXX driver
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/uri.hpp>
-
 #include <mongocxx/stdx.hpp>
+
+// bson CXX driver
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
-#include <iostream>
+
+// other
+#include <utility>
 
 using namespace std;
 
@@ -95,7 +103,7 @@ UserConf swParseConfig() {
         string id = parser.get("USERID");
         string pswd = parser.get("PASSWORD");
         if (id.empty()) {
-            cout << "[FATAL] Incorrect config. Closing..." << endl;
+            cout << "[FATAL] Incorrect config." << endl;
             exit(1);
         }
 
@@ -106,14 +114,14 @@ UserConf swParseConfig() {
         return u_cfg;
     }
     // by default
-    cout << "[FATAL] Parse failture" << endl;
+    cout << "[FATAL] Parse failture." << endl;
     exit(1);
 }
 
 RSA* loadServerKey(const string& publicKeyStr) {
     BIO* bio = BIO_new_mem_buf(publicKeyStr.c_str(), -1);
     if (!bio) {
-        cerr << "[FATAL] Failed to create BIO" << endl;
+        cerr << "[FATAL] Failed to create BIO." << endl;
         exit(1);
     }
 
@@ -121,14 +129,15 @@ RSA* loadServerKey(const string& publicKeyStr) {
     BIO_free(bio);
 
     if (!rsa) {
-        cerr << "[FATAL] Failed to read public key" << endl;
+        cerr << "[FATAL] Failed to read public key." << endl;
         exit(1);
     }
 
     return rsa;
 }
 
-string getServerKey(char *ip) {
+string getServerKey(const char *ip) {
+    cout << "IP: '" << ip << "'\n";
     mongocxx::instance instance{};
     mongocxx::client client{mongocxx::uri{"mongodb://localhost:27017"}};
 
@@ -291,6 +300,15 @@ string swCypherMsg(string package, void* pub_key, string salt) {
     return "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
 }
 
+const char* parseIp(DbIp *db_ip) {
+    string ip(db_ip->ip);
+    // TODO: пофиксить ошибку с тем, что не находится public_key по IP
+    //                                 len of localhost is 9
+    if (0 != std::string::npos) ip.replace(0, 9, "localhost");
+
+    return (ip+":"+to_string(db_ip->port)).c_str();
+}
+
 int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     if (u_cfg->public_key == NULL || u_cfg->private_key == NULL) { // Check on public & private keys
         cerr << "No swLoadKeys()" << endl;
@@ -314,7 +332,9 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
         return 1;
     }
     //                     TODO: change to data from DbIp  --\|
-    const string server_key_str = getServerKey("localhost:1201");
+    
+    const string server_key_str = getServerKey(parseIp(db_ip));
+    //const string server_key_str = getServerKey("localhost:1201");
 
     RSA *server_key = loadServerKey(server_key_str);   // get server key
     string msg_salt = swGenSalt();                     // gen salt

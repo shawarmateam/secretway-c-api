@@ -8,7 +8,7 @@
 // OffAccS IP struct
 struct DbIp {
     short port;
-    char* ip;
+    char *ip;
     void *private_key; // RSA*
 };
 
