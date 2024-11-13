@@ -36,6 +36,8 @@ To send message you need to use **swSendMsg()**.
 
 - `int swGenKeys(char *pu_key, char *pr_key)` - To generate **public & private** RSA keys.
 
+- `std::string swDecryptMsg(void *pri_key, std::string e_msg)` - To decrypt **SecretWay** message.
+
 ### Cypher System
 
 For example we take message **"Hello World"**:

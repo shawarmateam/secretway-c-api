@@ -40,30 +40,28 @@ void handleErrors() {
 
 class EnvParser {
 public:
-    bool load(const std::string& filename) {
-        std::ifstream file(filename);
+    bool load(const string& filename) {
+        ifstream file(filename);
         if (!file.is_open()) {
-            std::cerr << "Could not open the file: " << filename << std::endl;
+            cerr << "[FATAL] Could not open the file: " << filename << endl;
             return false;
         }
 
-        std::string line;
-        while (std::getline(file, line)) {
+        string line;
+        while (getline(file, line)) {
             trim(line);
             // ignore empty str & comments
-            if (line.empty() || line[0] == '#') {
+            if (line.empty() || line[0] == '#')
                 continue;
-            }
 
             // divide str on key & val
             size_t pos = line.find('=');
-            if (pos == std::string::npos) {
-                std::cerr << "Invalid line: " << line << std::endl;
-                continue;
+            if (pos == string::npos) {
+                cerr << "[ERROR] Invalid line: " << line << endl;  continue;
             }
 
-            std::string key = trim(line.substr(0, pos));
-            std::string value = trim(line.substr(pos + 1));
+            string key = trim(line.substr(0, pos));
+            string value = trim(line.substr(pos+1));
 
             envMap[key] = value;
         }
@@ -72,21 +70,21 @@ public:
         return true;
     }
 
-    std::string get(const std::string& key) const {
+    string get(const string& key) const {
         auto it = envMap.find(key);
-        if (it != envMap.end()) {
+        if (it != envMap.end())
             return it->second;
-        }
         return "";
     }
 
 private:
-    std::map<std::string, std::string> envMap;
+    map<string, string> envMap;
 
-    std::string trim(const std::string& str) { // rm space
+    string trim(const string& str) { // rm space
         size_t first = str.find_first_not_of(' ');
-        if (first == std::string::npos) return "";
+        if (first == string::npos) return "";
         size_t last = str.find_last_not_of(' ');
+
         return str.substr(first, (last - first + 1));
     }
 };
@@ -94,13 +92,10 @@ private:
 UserConf swParseConfig() {
     EnvParser parser;
     if (parser.load("config.env")) {
-        std::string id = parser.get("USERID");
-        std::string pswd = parser.get("PASSWORD");
-        if (!id.empty()) {
-            std::cout << "USERID: '" << id << "'" << std::endl;
-            std::cout << "PASSWORD: '" << pswd << "'" << std::endl;
-        } else {
-            std::cout << "Incorrect config. Closing..." << std::endl;
+        string id = parser.get("USERID");
+        string pswd = parser.get("PASSWORD");
+        if (id.empty()) {
+            cout << "[FATAL] Incorrect config. Closing..." << endl;
             exit(1);
         }
 
@@ -110,34 +105,30 @@ UserConf swParseConfig() {
 
         return u_cfg;
     }
-
-    cout << "Parse failture" << endl;
+    // by default
+    cout << "[FATAL] Parse failture" << endl;
     exit(1);
 }
 
-
-
-RSA* loadServerKey(const std::string& publicKeyStr) {
-    cout << "start of loadServerKey" << endl;
+RSA* loadServerKey(const string& publicKeyStr) {
     BIO* bio = BIO_new_mem_buf(publicKeyStr.c_str(), -1);
-    cout << "BIO cteated!" << endl;
     if (!bio) {
-        std::cerr << "Failed to create BIO" << std::endl;
-        return nullptr;
+        cerr << "[FATAL] Failed to create BIO" << endl;
+        exit(1);
     }
 
     RSA* rsa = PEM_read_bio_RSA_PUBKEY(bio, nullptr, nullptr, nullptr);
     BIO_free(bio);
 
     if (!rsa) {
-        std::cerr << "Failed to read public key" << std::endl;
-        return nullptr;
+        cerr << "[FATAL] Failed to read public key" << endl;
+        exit(1);
     }
 
     return rsa;
 }
 
-std::string getServerKey(char *ip) {
+string getServerKey(char *ip) {
     mongocxx::instance instance{};
     mongocxx::client client{mongocxx::uri{"mongodb://localhost:27017"}};
 
@@ -151,7 +142,7 @@ std::string getServerKey(char *ip) {
 
     for (auto&& doc : cursor) {
         auto public_key = doc["public_key"].get_utf8().value;
-        std::string str(public_key);
+        string str(public_key);
         return str;
     }
     cout << "[FATAL] no public_key found" << endl;
@@ -184,46 +175,44 @@ int swGenKeys(char *pu_key, char *pr_key) {
     EVP_cleanup();
 }
 
-std::vector<DbIp> swParseIpList(const std::string &filename) {
-    std::vector<DbIp> dbIps; // Используем вектор для динамического размера
-    std::ifstream file(filename);
-    std::string line;
+vector<DbIp> swParseIpList(const string &filename) {
+    vector<DbIp> dbIps;
+    ifstream file(filename);
+    string line;
 
     if (!file.is_open()) {
-        std::cerr << "Не удалось открыть файл!" << std::endl;
-        return dbIps; // Возвращаем пустой вектор в случае ошибки
+        cerr << "[FATAL] Couldn't open file." << endl;
+        exit(1);
     }
 
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        std::string ip;
-        std::string portStr;
+    while (getline(file, line)) {
+        istringstream iss(line);
+        string ip;
+        string portStr;
 
-        // Разделяем строку на IP и порт
-        if (std::getline(iss, ip, ':') && std::getline(iss, portStr)) {
+        // Divide str by port & ip
+        if (getline(iss, ip, ':') && getline(iss, portStr)) {
             DbIp dbIp;
-            dbIp.ip = new char[ip.length() + 1]; // Выделяем память для IP
-            std::strcpy(dbIp.ip, ip.c_str()); // Копируем IP в структуру
-            dbIp.port = static_cast<short>(std::stoi(portStr)); // Преобразуем порт в short
+            dbIp.ip = new char[ip.length() + 1]; // allocate mem for IP
+            strcpy(dbIp.ip, ip.c_str());
+            dbIp.port = static_cast<short>(stoi(portStr)); // Parse port into short
 
-            dbIps.push_back(dbIp); // Добавляем структуру в вектор
+            dbIps.push_back(dbIp); // adding struct to vector
         }
     }
 
     file.close();
-    return dbIps; // Возвращаем заполненный вектор
+    return dbIps;
 }
 
-void freeDbIpVector(std::vector<DbIp>& db_ips) {
-    for (auto& db_ip : db_ips) {
-        free(db_ip.ip);
-    }
+void freeDbIpVector(vector<DbIp>& db_ips) {
+    for (auto& db_ip : db_ips) free(db_ip.ip);
 }
 
 RSA* createRSAWithFilename(const char* filename, int public_key) {
     FILE* fp = fopen(filename, "rb");
     if (fp == nullptr) {
-        std::cerr << "Unable to open file " << filename << std::endl;
+        cerr << "Unable to open file " << filename << endl;
         return nullptr;
     }
 
@@ -238,7 +227,7 @@ RSA* createRSAWithFilename(const char* filename, int public_key) {
     return rsa;
 }
 
-std::string rsaEncrypt(RSA* rsa, const std::string& message) {
+string rsaEncrypt(RSA *rsa, const string& message) {
     int rsa_len = RSA_size(rsa);
     unsigned char* encrypted = new unsigned char[rsa_len];
 
@@ -247,73 +236,71 @@ std::string rsaEncrypt(RSA* rsa, const std::string& message) {
         handleErrors();
     }
 
-    std::string encryptedMessage(reinterpret_cast<char*>(encrypted), result);
+    string encryptedMessage(reinterpret_cast<char*>(encrypted), result);
     delete[] encrypted;
     return encryptedMessage;
 }
 
-std::string rsaDecrypt(RSA* rsa, const std::string& encryptedMessage) {
+string rsaDecrypt(RSA* rsa, const string& encryptedMessage) {
     int rsa_len = RSA_size(rsa);
-    unsigned char* decrypted = new unsigned char[rsa_len];
+    unsigned char *decrypted = new unsigned char[rsa_len];
 
     int result = RSA_private_decrypt(encryptedMessage.length(), (unsigned char*)encryptedMessage.c_str(), decrypted, rsa, RSA_PKCS1_OAEP_PADDING);
     if (result == -1) {
         handleErrors();
     }
 
-    std::string decryptedMessage(reinterpret_cast<char*>(decrypted), result);
+    string decryptedMessage(reinterpret_cast<char*>(decrypted), result);
     delete[] decrypted;
     return decryptedMessage;
 }
 
-std::string swGenSalt() {
-    const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+string swGenSalt() {
+    const string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                     "abcdefghijklmnopqrstuvwxyz"
                                     "0123456789"
                                     "!@$%^*_+.";
-    std::string salt;
-    srand(static_cast<unsigned int>(time(0))); // init
+    string salt;
+    srand(static_cast<unsigned int>(time(0))); // init ranrom
 
     for (int i = 0; i < 120; ++i) {
         salt += characters[rand() % characters.size()];
     }
 
     char *res = new char[salt.size() + 1];
-    std::strcpy(res, salt.c_str());
+    strcpy(res, salt.c_str());
     return res;
 }
 
-std::string swDecryptMsg(void *pri_key, std::string e_msg) {
+string swDecryptMsg(void *pri_key, string e_msg) {
     if (e_msg[0] != 'S' || e_msg[1] != 'W') {
         cout << "[ERROR] Invalid message (swDecryptMsg)" << endl;
         exit(1);
-    }
+    } // check SW mark
 
     e_msg.erase(0, 2); // Remove SW mark
     MsgCyph msg_struct;
     msg_struct.cyph_msg = e_msg.substr(0, 2049); // index of RSA msg end
     msg_struct.salt = e_msg.substr(2050);        // to skip ":"
-    std::string msg = rsaDecrypt((RSA*)pri_key, msg_struct.cyph_msg);
-    cout << "MSG: " << msg << endl;
+    string msg = rsaDecrypt((RSA*)pri_key, msg_struct.cyph_msg);
+
     return msg;
 }
 
-std::string swCypherMsg(std::string package, void* pub_key, std::string salt) {
-
-    std::string cypheredMsg = "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
-    return cypheredMsg;
+string swCypherMsg(string package, void* pub_key, string salt) {
+    return "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
 }
 
 int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     if (u_cfg->public_key == NULL || u_cfg->private_key == NULL) { // Check on public & private keys
-        std::cerr << "No swLoadKeys()" << std::endl;
+        cerr << "No swLoadKeys()" << endl;
         return 1;
     }
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        std::cerr << "[FATAL] Error during creating socket" << std::endl;
-        exit(1);
+        cerr << "[FATAL] Error during creating socket" << endl;
+        return 1;
     }
 
     sockaddr_in serverAddress;
@@ -322,41 +309,43 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     inet_pton(AF_INET, db_ip->ip, &serverAddress.sin_addr);
 
     if (connect(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        std::cerr << "[FATAL] Error during connect to server" << std::endl;
+        cerr << "[FATAL] Error during connect to server" << endl;
         close(sock);
-        exit(1);
+        return 1;
     }
-    std::cout << "Connected to server!" << std::endl;
-
     //                     TODO: change to data from DbIp  --\|
-    const std::string server_key_str = getServerKey("localhost:1201");
+    const string server_key_str = getServerKey("localhost:1201");
 
-    cout << "Server key getted!" << endl;
     RSA *server_key = loadServerKey(server_key_str);                    // get server key
-    cout << "server key loaded" << endl;
-    std::string msg_salt = swGenSalt();                                                          // gen salt
+    string msg_salt = swGenSalt();                                                          // gen salt
     char *msg_salt_c = new char[msg_salt.size()+1];
-    std::strcpy(msg_salt_c, msg_salt.c_str());                                                   // get salt as char *
+    strcpy(msg_salt_c, msg_salt.c_str());                                                   // get salt as char *
 
-    std::string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
-    cout << "Msg cyphered!" << endl;
+    string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
     cout << cyphered_msg << endl;
 
-    size_t package_size = 76 + strlen(u_cfg->id) + strlen(u_cfg->password) + strlen(s_ui) + cyphered_msg.size();
+    size_t package_size = 89
+        + strlen(u_cfg->id)
+        + strlen(u_cfg->password)
+        + strlen(s_ui)
+        + cyphered_msg.size()
+        + msg_salt.size();
+
+
     char* package = (char*)malloc(package_size);
     memset(package, 0, package_size);
 
     snprintf(package, package_size,
-        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true}", // TODO: добавить 'salt': "<соль>"
-        u_cfg->id, u_cfg->password, s_ui, msg);
+        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': '%s'}",
+        u_cfg->id, u_cfg->password, s_ui, msg, msg_salt);
 
     cout << "'" << package << "'" << endl;
     //                                              TEST (TO SEND 4 URSELF)
-    std::string package_cyph = swCypherMsg(package, u_cfg->public_key, swGenSalt());
+    string package_cyph = swCypherMsg(package, u_cfg->public_key, swGenSalt());
     const char *package_char = package_cyph.c_str();
 
-    std::cout << package_cyph.length() << std::endl;
-    std::cout << strlen(package_char) << std::endl;
+    cout << package_cyph.length() << endl;
+    cout << strlen(package_char) << endl;
     send(sock, package_char, strlen(package_char), 0);
 
     // Remove mem
@@ -366,7 +355,7 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     return 0;
 }
 
-void swLoadKeys(UserConf *u_cfg, std::string pu_key, std::string pr_key) {
+void swLoadKeys(UserConf *u_cfg, string pu_key, string pr_key) {
     u_cfg->public_key = createRSAWithFilename(pu_key.c_str(), 1);
     u_cfg->private_key = createRSAWithFilename(pr_key.c_str(), 0);
 }

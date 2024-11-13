@@ -3,6 +3,7 @@
 
 using namespace std;
 
+// CODE FOR TESTS
 int main(int argc, char* argv[])
 {
     UserConf u_cfg = swParseConfig();
@@ -17,12 +18,14 @@ int main(int argc, char* argv[])
     swLoadKeys(&u_cfg, "public_key.pem", "private_key.pem");
     swLoadKeys(&server_test, "public_key.pem", "private_srvr_key.pem");
     int status_msg = swSendMsg("test", "0", &u_cfg, &first_ip);
+    if (status_msg) return 1;
 
     printf("id: '%s'\n", u_cfg.id);
     printf("pswd: '%s'\n", u_cfg.password);
 
     if (argc == 2) {
         std::string test = swDecryptMsg((void *) server_test.private_key, argv[1]);
+        cout << "MSG: " << test << endl;
     }
 
     // Remove mem
