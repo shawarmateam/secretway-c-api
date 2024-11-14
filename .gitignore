@@ -1,2 +1,6 @@
 bin/
 log
+private_key.pem
+public_key.pem
+private_srvr_key.pem
+output.hex

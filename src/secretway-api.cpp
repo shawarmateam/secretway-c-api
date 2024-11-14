@@ -302,8 +302,6 @@ string swCypherMsg(string package, void* pub_key, string salt) {
 
 const char* parseIp(DbIp *db_ip) {
     string ip(db_ip->ip);
-    // TODO: пофиксить ошибку с тем, что не находится public_key по IP
-    //                                 len of localhost is 9
     if (0 != std::string::npos) ip.replace(0, 9, "localhost");
 
     return (ip+":"+to_string(db_ip->port)).c_str();
