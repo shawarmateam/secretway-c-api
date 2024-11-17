@@ -334,9 +334,11 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     //const string server_key_str = getServerKey("localhost:1201");
 
     RSA *server_key = loadServerKey(server_key_str);   // get server key
-    string msg_salt = swGenSalt();                     // gen salt
-    char *msg_salt_c = new char[msg_salt.size()+1];    // alloc char *
-    strcpy(msg_salt_c, msg_salt.c_str());              // get salt as char *
+    //string msg_salt = swGenSalt();                     // gen salt
+    //char *msg_salt_c = new char[msg_salt.size()+1];    // alloc char *
+    //strcpy(msg_salt_c, msg_salt.c_str());              // get salt as char *
+    string msg_salt = "SECRETWAYMARKSALT";
+    char *msg_salt_c = "SECRETWAYNARKSALT";
 
     string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
     cout << cyphered_msg << endl;
@@ -354,7 +356,7 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     snprintf(package, package_size,
         "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': '%s'}",
-        u_cfg->id, u_cfg->password, s_ui, msg, msg_salt);
+        u_cfg->id, u_cfg->password, s_ui, msg);
 
     cout << "'" << package << "'" << endl;
     //                                              TEST (TO SEND 4 URSELF)
@@ -362,7 +364,6 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     const char *package_char = package_cyph.c_str();
 
     cout << package_cyph.length() << endl;
-    cout << strlen(package_char) << endl;
     send(sock, package_char, strlen(package_char), 0);
 
     // Remove mem
