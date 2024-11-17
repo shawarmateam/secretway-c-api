@@ -136,24 +136,31 @@ RSA* loadServerKey(const string& publicKeyStr) {
     return rsa;
 }
 
-std::string getServerKey(const std::string& server_ip) {
+std::string getServerKey(const std::string& ip) {
+    // Инициализация экземпляра MongoDB
     mongocxx::instance instance{};
     mongocxx::client client{mongocxx::uri{}};
 
+    // Подключение к базе данных и коллекции
     auto db = client["servers_bd"];
     auto collection = db["offacc_servers"];
 
-    auto filter = document{} << "server_ip" << server_ip << finish;
+    // Создание фильтра для поиска по server_ip
+    bsoncxx::builder::stream::document filter_builder;
+    filter_builder << "server_ip" << ip;
 
-    auto cursor = collection.find(filter.view());
+    // Выполнение запроса
+    auto cursor = collection.find(filter_builder.view());
 
+    // Обработка результатов
     for (auto&& doc : cursor) {
-        auto public_key = doc["public_key"];
-        if (public_key) {
-            return public_key.get_utf8().value.to_string();
-        }
+        // Извлечение public_key из документа
+        auto public_key = std::string{doc["public_key"].get_utf8().value}; // Преобразование в std::string
+        return public_key; // Возвращаем найденный public_key
     }
+
     cout << "[FATAL] no public_key" << endl;
+    exit(3);
 }
 
 
@@ -337,25 +344,21 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     //string msg_salt = swGenSalt();                     // gen salt
     //char *msg_salt_c = new char[msg_salt.size()+1];    // alloc char *
     //strcpy(msg_salt_c, msg_salt.c_str());              // get salt as char *
-    string msg_salt = "SECRETWAYMARKSALT";
-    char *msg_salt_c = "SECRETWAYNARKSALT";
 
-    string cyphered_msg = swCypherMsg(strcat(msg_salt_c, msg), server_key, msg_salt); // encrypt msg
-    cout << cyphered_msg << endl;
+    string cyphered_msg = swCypherMsg(strcat("SECRETWAYSALTMARK", msg), server_key, "SECRETWAYSALTMARK"); // encrypt msg
 
-    size_t package_size = 89
+    size_t package_size = 89+17 // strlen("SECRETWAYSALTMARK") == 17
         + strlen(u_cfg->id)
         + strlen(u_cfg->password)
         + strlen(s_ui)
-        + cyphered_msg.size()
-        + msg_salt.size();
-
+        + cyphered_msg.size();
+    cout << "\n\n\nSIZE OF MSG: " << package_size << endl;
 
     char* package = (char*)malloc(package_size);
     memset(package, 0, package_size);
 
     snprintf(package, package_size,
-        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': '%s'}",
+        "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': 'SECRETWAYSALTMARK'}",
         u_cfg->id, u_cfg->password, s_ui, msg);
 
     cout << "'" << package << "'" << endl;
