@@ -136,27 +136,26 @@ RSA* loadServerKey(const string& publicKeyStr) {
     return rsa;
 }
 
-string getServerKey(const char *ip) {
-    cout << "IP: '" << ip << "'\n";
+std::string getServerKey(const std::string& server_ip) {
     mongocxx::instance instance{};
-    mongocxx::client client{mongocxx::uri{"mongodb://localhost:27017"}};
+    mongocxx::client client{mongocxx::uri{}};
 
     auto db = client["servers_bd"];
     auto collection = db["offacc_servers"];
 
-    bsoncxx::builder::stream::document filter_builder;
-    filter_builder << "server_ip" << ip;
+    auto filter = document{} << "server_ip" << server_ip << finish;
 
-    auto cursor = collection.find(filter_builder.view());
+    auto cursor = collection.find(filter.view());
 
     for (auto&& doc : cursor) {
-        auto public_key = doc["public_key"].get_utf8().value;
-        string str(public_key);
-        return str;
+        auto public_key = doc["public_key"];
+        if (public_key) {
+            return public_key.get_utf8().value.to_string();
+        }
     }
-    cout << "[FATAL] no public_key found" << endl;
-    exit(1);
+    cout << "[FATAL] no public_key" << endl;
 }
+
 
 int swGenKeys(char *pu_key, char *pr_key) {
     OpenSSL_add_all_algorithms();

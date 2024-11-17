@@ -12,7 +12,7 @@ def read_file_and_convert_to_hex(file_path):
 
             # Записываем результат в файл
             with open('output.hex', 'w') as hex_file:
-                hex_file.write(', (byte) 0x'.join(hex_output))  # Записываем HEX значения через пробел
+                hex_file.write(''.join(hex_output))  # Записываем HEX значения через пробел
 
         print("Конвертация завершена. Результат записан в 'output.hex'.")
 
