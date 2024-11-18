@@ -351,9 +351,11 @@ int swSendMsg(string msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     cout << "Next is cyphered_msg" << endl;
     string cyphered_msg = swCypherMsg("SECRETWAYSALTMARK"+msg, (void *)server_key, "SECRETWAYSALTMARK"); // encrypt msg
-    cout << "End of cyphered_msg" << endl;
+    cout << "End of cyphered_msg (" << cyphered_msg << ")" << endl;
 
-    size_t package_size = 89+17 // strlen("SECRETWAYSALTMARK") == 17
+    cout << "\n\n\n\n\nCYPHERED_MSG: " << cyphered_msg << endl;
+    cout << "\n\nCYPHERED_MSG SIZE:" << cyphered_msg.size() << endl;
+    size_t package_size = 104 // strlen("SECRETWAYSALTMARK") == 17
         + strlen(u_cfg->id)
         + strlen(u_cfg->password)
         + strlen(s_ui)
