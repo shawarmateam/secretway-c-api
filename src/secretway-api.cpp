@@ -136,7 +136,8 @@ RSA* loadServerKey(const string& publicKeyStr) {
     return rsa;
 }
 
-std::string getServerKey(const std::string& ip) {
+std::string getServerKey(const char *ip) {
+    cout << "IP: '" << ip << "'\n";
     // Инициализация экземпляра MongoDB
     mongocxx::instance instance{};
     mongocxx::client client{mongocxx::uri{}};
@@ -147,7 +148,8 @@ std::string getServerKey(const std::string& ip) {
 
     // Создание фильтра для поиска по server_ip
     bsoncxx::builder::stream::document filter_builder;
-    filter_builder << "server_ip" << ip;
+    string ip_str(ip);
+    filter_builder << "server_ip" << ip_str;
 
     // Выполнение запроса
     auto cursor = collection.find(filter_builder.view());
@@ -303,6 +305,7 @@ string swDecryptMsg(void *pri_key, string e_msg) {
 }
 
 string swCypherMsg(string package, void* pub_key, string salt) {
+    cout << "In SW cypher msg" << endl;
     return "SW"+rsaEncrypt((RSA*)pub_key, package)+":"+salt;
 }
 
@@ -313,7 +316,7 @@ const char* parseIp(DbIp *db_ip) {
     return (ip+":"+to_string(db_ip->port)).c_str();
 }
 
-int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
+int swSendMsg(string msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
     if (u_cfg->public_key == NULL || u_cfg->private_key == NULL) { // Check on public & private keys
         cerr << "No swLoadKeys()" << endl;
         return 1;
@@ -336,16 +339,19 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
         return 1;
     }
     //                     TODO: change to data from DbIp  --\|
-    
-    const string server_key_str = getServerKey(parseIp(db_ip));
-    //const string server_key_str = getServerKey("localhost:1201");
+   
+    //const string server_key_str = getServerKey(parseIp(db_ip));
+    const string server_key_str = getServerKey("localhost:1201");
+    cout << server_key_str << endl;
 
     RSA *server_key = loadServerKey(server_key_str);   // get server key
     //string msg_salt = swGenSalt();                     // gen salt
     //char *msg_salt_c = new char[msg_salt.size()+1];    // alloc char *
     //strcpy(msg_salt_c, msg_salt.c_str());              // get salt as char *
 
-    string cyphered_msg = swCypherMsg(strcat("SECRETWAYSALTMARK", msg), server_key, "SECRETWAYSALTMARK"); // encrypt msg
+    cout << "Next is cyphered_msg" << endl;
+    string cyphered_msg = swCypherMsg("SECRETWAYSALTMARK"+msg, (void *)server_key, "SECRETWAYSALTMARK"); // encrypt msg
+    cout << "End of cyphered_msg" << endl;
 
     size_t package_size = 89+17 // strlen("SECRETWAYSALTMARK") == 17
         + strlen(u_cfg->id)
@@ -359,7 +365,7 @@ int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     snprintf(package, package_size,
         "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': 'SECRETWAYSALTMARK'}",
-        u_cfg->id, u_cfg->password, s_ui, msg);
+        u_cfg->id, u_cfg->password, s_ui, cyphered_msg);
 
     cout << "'" << package << "'" << endl;
     //                                              TEST (TO SEND 4 URSELF)

@@ -34,7 +34,7 @@ UserConf swParseConfig();
 std::vector<DbIp> swParseIpList(const std::string &filename);
 
 // sending
-int swSendMsg(const char* msg, const char* s_ui, UserConf *u_cfg, DbIp* db_ip);
+int swSendMsg(std::string msg, const char* s_ui, UserConf *u_cfg, DbIp* db_ip);
 
 // free
 void freeDbIpVector(std::vector<DbIp>& db_ips);
