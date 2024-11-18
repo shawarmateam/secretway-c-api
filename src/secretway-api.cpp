@@ -365,7 +365,7 @@ int swSendMsg(string msg, const char* s_ui, UserConf *u_cfg, DbIp *db_ip) {
 
     snprintf(package, package_size,
         "{'userId': '%s', 'password': '%s', 'sendUserId': '%s', 'msg': '%s', 'client': true, 'salt': 'SECRETWAYSALTMARK'}",
-        u_cfg->id, u_cfg->password, s_ui, cyphered_msg);
+        u_cfg->id, u_cfg->password, s_ui, cyphered_msg); // FIXME: fix bug with msg
 
     cout << "'" << package << "'" << endl;
     //                                              TEST (TO SEND 4 URSELF)
